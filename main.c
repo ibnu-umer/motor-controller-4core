@@ -30,7 +30,6 @@ unsigned int dry_run_latched = 0;
 unsigned int tank_low_all_zero = 0;
 unsigned char tank_low_vec[TANK_LOW_VEC_SIZE];
 unsigned char vec_idx = 0;
-__bit on = 0;
 
 
 
@@ -145,13 +144,12 @@ unsigned char dry_run_check(void)
 
 void toggle_motor(void)
 {
-    LED_PUMP_ON = on;
-    RELAY_1     = on;
-    motor_on    = on;
+    LED_PUMP_ON = motor_on ? 1: 0;
+    RELAY_1     = motor_on ? 1: 0;
     
     reset_starter_relay();
     
-    if (on) {
+    if (motor_on) { // If motor turned on, reset dry run
         dry_run_timer = 0;
         LED_DRY_RUN = 0;
     }
@@ -194,7 +192,7 @@ void main(void)
         if (!RESET_SW && !motor_on) 
         {
             LED_DRY_RUN = 0;
-            on = 1; toggle_motor();
+            motor_on = 1; toggle_motor();
             alarm();
         } 
         
@@ -211,7 +209,7 @@ void main(void)
         // Handle Tank full 
         if (!TANK_FULL && motor_on && relay_timer >= 600) {
             LED_TANK_LOW = 0;
-            on = 0; toggle_motor();
+            motor_on = 0; toggle_motor();
             dry_run_latched = 0;
 
             LED_TANK_FULL = 1;
@@ -227,7 +225,7 @@ void main(void)
         // Handle Tank Low 
         LED_TANK_LOW = tank_low_check() ? 1 : 0;
         if (LED_TANK_LOW && !motor_on) {
-            on = 1; toggle_motor();
+            motor_on = 1; toggle_motor();
             alarm();
         }
 
@@ -242,7 +240,7 @@ void main(void)
                 LED_TANK_LOW = 0;
 
                 alarm();
-                on = 0; toggle_motor();
+                motor_on = 0; toggle_motor();
             }
         }
 
