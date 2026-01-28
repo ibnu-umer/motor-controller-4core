@@ -1,0 +1,114 @@
+[p GLOBOPT AUTOSTATIC IEEE_DBL IEEE_FLT PIC14 PICREGULAR PICMID ]
+[d version 1.1 ]
+[d edition pro ]
+[d chip 16F882 ]
+[d frameptr 0 ]
+"10 C:\Program Files\Microchip\xc8\v3.10\pic\sources\c99\common\sprcadd.c
+[v ___fladd __fladd `(d  1 e 4 0 ]
+"4 C:\Program Files\Microchip\xc8\v3.10\pic\sources\c99\common\Umul8_16.c
+[v __Umul8_16 _Umul8_16 `(ui  1 e 2 0 ]
+"6 C:\Program Files\Microchip\xc8\v3.10\pic\sources\c99\pic\__eeprom.c
+[v ___eecpymem __eecpymem `(v  1 e 1 0 ]
+"39
+[v ___memcpyee __memcpyee `(v  1 e 1 0 ]
+"29 C:\Users\user\MPLABXProjects\motor_controller.X\main.c
+[v _init_hw init_hw `(v  1 e 1 0 ]
+"49
+[v _alarm alarm `(v  1 e 1 0 ]
+"57
+[v _pump_led_blink pump_led_blink `(v  1 e 1 0 ]
+"79
+[v _relay2_on_pump_start relay2_on_pump_start `(v  1 e 1 0 ]
+"112
+[v _reset_relay2_logic reset_relay2_logic `(v  1 e 1 0 ]
+"120
+[v _dry_run_check dry_run_check `(uc  1 e 1 0 ]
+"143
+[v _main main `(v  1 e 1 0 ]
+"228 C:/Program Files/Microchip/MPLABX/v6.20/packs/Microchip/PIC16Fxxx_DFP/1.6.156/xc8\pic\include\proc/pic16f882.h
+[v _PORTB PORTB `VEuc  1 e 1 @6 ]
+"290
+[v _PORTC PORTC `VEuc  1 e 1 @7 ]
+"1337
+[v _TRISA TRISA `VEuc  1 e 1 @133 ]
+"1399
+[v _TRISB TRISB `VEuc  1 e 1 @134 ]
+"1461
+[v _TRISC TRISC `VEuc  1 e 1 @135 ]
+"1704
+[v _OSCCON OSCCON `VEuc  1 e 1 @143 ]
+"3229
+[v _ANSEL ANSEL `VEuc  1 e 1 @392 ]
+"3273
+[v _ANSELH ANSELH `VEuc  1 e 1 @393 ]
+"3901
+[v _RA1 RA1 `VEb  1 e 0 @41 ]
+"3904
+[v _RA2 RA2 `VEb  1 e 0 @42 ]
+"3907
+[v _RA3 RA3 `VEb  1 e 0 @43 ]
+"3934
+[v _RB4 RB4 `VEb  1 e 0 @52 ]
+"3937
+[v _RB5 RB5 `VEb  1 e 0 @53 ]
+"3940
+[v _RB6 RB6 `VEb  1 e 0 @54 ]
+"3943
+[v _RB7 RB7 `VEb  1 e 0 @55 ]
+"3955
+[v _RC1 RC1 `VEb  1 e 0 @57 ]
+"3961
+[v _RC3 RC3 `VEb  1 e 0 @59 ]
+"3964
+[v _RC4 RC4 `VEb  1 e 0 @60 ]
+"3970
+[v _RC6 RC6 `VEb  1 e 0 @62 ]
+"20 C:\Users\user\MPLABXProjects\motor_controller.X\main.c
+[v _blink_cnt blink_cnt `ui  1 e 2 0 ]
+"21
+[v _blink_state blink_state `b  1 e 0 0 ]
+"22
+[v _motor_on motor_on `ui  1 e 2 0 ]
+"23
+[v _r2_timer r2_timer `ui  1 e 2 0 ]
+"24
+[v _r2_state r2_state `uc  1 e 1 0 ]
+"25
+[v _dry_run_timer dry_run_timer `ui  1 e 2 0 ]
+"26
+[v _dry_run dry_run `ui  1 e 2 0 ]
+"143
+[v _main main `(v  1 e 1 0 ]
+{
+"216
+} 0
+"112
+[v _reset_relay2_logic reset_relay2_logic `(v  1 e 1 0 ]
+{
+"117
+} 0
+"79
+[v _relay2_on_pump_start relay2_on_pump_start `(v  1 e 1 0 ]
+{
+"109
+} 0
+"57
+[v _pump_led_blink pump_led_blink `(v  1 e 1 0 ]
+{
+"76
+} 0
+"29
+[v _init_hw init_hw `(v  1 e 1 0 ]
+{
+"46
+} 0
+"120
+[v _dry_run_check dry_run_check `(uc  1 e 1 0 ]
+{
+"139
+} 0
+"49
+[v _alarm alarm `(v  1 e 1 0 ]
+{
+"54
+} 0
