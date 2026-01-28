@@ -161,18 +161,25 @@ void main(void)
 {
     init_hw();
     
+    // Delay before starting
+    __delay_ms(2000); alarm();
+    
     while(1)
     {
+        
+        // Handle Reset switch trigger
+        if (!RESET_SW && !motor_on) 
+        {
+            LED_DRY_RUN = 0;
+            on = 1; toggle_motor();
+            alarm();
+        } 
+        
+        
         // Handle Dry Run
         if (LED_DRY_RUN)
         {
             dry_run_latched = 1;
-            if (!RESET_SW) // Reset switch trigger
-            {
-                LED_DRY_RUN = 0;
-                on = 1; toggle_motor();
-                alarm();
-            } 
             continue;
         }
         
@@ -203,7 +210,6 @@ void main(void)
         else { LED_TANK_LOW = 0; }
        
         
-        // Blink PUMP ON LED when motor is on
         if (motor_on) {
             pump_led_blink();
             run_starter_relay();
