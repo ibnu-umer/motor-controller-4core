@@ -1,0 +1,30 @@
+# MPLAB X build output
+dist/
+build/
+
+# MPLAB X private settings
+nbproject/private/
+
+# Compiler / linker outputs
+*.hex
+*.elf
+*.map
+*.lst
+*.sym
+*.cof
+*.as
+*.o
+*.p1
+*.d
+
+# XC8 temporary files
+*.err
+*.tmp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Backup / editor files
+*~
+*.bak
