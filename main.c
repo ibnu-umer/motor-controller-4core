@@ -56,9 +56,9 @@ void init_hw(void)
 
 void alarm(void)
 {
-    BUZZER = 1; __delay_ms(300);
-    BUZZER = 0; __delay_ms(300);
-    BUZZER = 1; __delay_ms(300);
+    BUZZER = 1; __delay_ms(400);
+    BUZZER = 0; __delay_ms(400);
+    BUZZER = 1; __delay_ms(400);
     BUZZER = 0;
 }
 
@@ -121,11 +121,13 @@ void reset_starter_relay(void)
 
 unsigned char dry_run_check(void)
 {
+    // dry_run_timer : 10 seconds = 2000
+    
     if (!motor_on) { return 0; }
     
-    if (dry_run_latched && dry_run_timer >= 600) { return 1;} // Lost to dry run after 
+    if (dry_run_latched && dry_run_timer >= 4000) { return 1;} // Lost to dry run after 
 
-    if (dry_run_timer >= 2000) { return 1; } // Dry run detected
+    if (dry_run_timer >= 30000) { return 1; } // Dry run detected
     
     if (DRY_RUN) { dry_run_timer++; }  // increase timer in DRY RUN not triggered
     else { dry_run_timer = 0; dry_run_latched = 1; }
@@ -157,7 +159,7 @@ void main(void)
     init_hw();
     
     // Delay before starting
-    __delay_ms(2000); alarm();
+    __delay_ms(20000); alarm();
     
     while(1)
     {
@@ -175,6 +177,7 @@ void main(void)
         if (LED_DRY_RUN)
         {
             dry_run_latched = 1;
+            __delay_ms(5);
             continue;
         }
         
@@ -188,7 +191,7 @@ void main(void)
             LED_TANK_FULL = 1;
             alarm();
 
-            __delay_ms(2000); // no loop delay, 2s
+            __delay_ms(10000); // no loop delay, 10s
             LED_TANK_FULL = 0;
 
             reset_starter_relay();
