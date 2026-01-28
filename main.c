@@ -16,6 +16,7 @@
 
 #define _XTAL_FREQ 8000000
 #define BLINK_TICKS 100
+#define TANK_LOW_VEC_SIZE 10
 
 
 // =============== VARIABLES =============== //
@@ -25,7 +26,10 @@ unsigned int motor_on = 0;
 unsigned int relay_timer = 0;
 unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
-unsigned int dry_run_latched = 0;      
+unsigned int dry_run_latched = 0;     
+unsigned int tank_low_all_zero = 0;
+unsigned char tank_low_vec[TANK_LOW_VEC_SIZE];
+unsigned char vec_idx = 0;
 __bit on = 0;
 
 
@@ -49,6 +53,9 @@ void init_hw(void)
     // Clear outputs
     PORTB = 0x00;
     PORTC = 0x00;
+    
+    for (unsigned char i = 0; i < TANK_LOW_VEC_SIZE; i++)
+        tank_low_vec[i] = 1;  
 }
 
 
@@ -151,6 +158,25 @@ void toggle_motor(void)
 }
 
 
+unsigned int tank_low_check(void)
+{
+    unsigned char i;
+
+    tank_low_vec[vec_idx] = !TANK_LOW;
+    vec_idx++;
+    if (vec_idx >= TANK_LOW_VEC_SIZE)
+        vec_idx = 0;
+        tank_low_all_zero = 1;
+        
+        for (i = 0; i < TANK_LOW_VEC_SIZE; i++)
+        {
+            // if vector contains any 1's
+            if (tank_low_vec[i]) { tank_low_all_zero = 0; break; }
+        }
+
+    return tank_low_all_zero;   // 1: all zero, 0: not all zero
+}
+
 
 // ================= MAIN ================= //
 
@@ -199,14 +225,12 @@ void main(void)
        
         
         // Handle Tank Low 
-        if (!TANK_LOW && !motor_on) {
+        LED_TANK_LOW = tank_low_check() ? 1 : 0;
+        if (LED_TANK_LOW && !motor_on) {
             on = 1; toggle_motor();
-            LED_TANK_LOW = 1;
             alarm();
         }
-        else if (!TANK_LOW && motor_on) { LED_TANK_LOW = 1; }
-        else { LED_TANK_LOW = 0; }
-       
+
         
         if (motor_on) {
             pump_led_blink();
