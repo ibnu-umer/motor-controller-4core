@@ -20,10 +20,11 @@
 unsigned int blink_cnt = 0;
 __bit blink_state = 0;
 unsigned int motor_on = 0;
-unsigned int r2_timer = 0;
-unsigned char r2_state = 0;
+unsigned int relay_timer = 0;
+unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
 unsigned int dry_run = 0;
+__bit on = 0;
 
 // ================= INITIALIZATION =================
 void init_hw(void)
@@ -48,6 +49,10 @@ void init_hw(void)
 
 void alarm(void)
 {
+    BUZZER = 1;
+    __delay_ms(300);
+    BUZZER = 0;
+    __delay_ms(300);
     BUZZER = 1;
     __delay_ms(300);
     BUZZER = 0;
@@ -76,29 +81,31 @@ void pump_led_blink(void)
 }
 
 
-void relay2_on_pump_start(void)
+void run_starter_relay(void)
 {
-    switch (r2_state)
+    switch (relay_state)
     {
         case 0: // idle
-            r2_timer = 0;
-            r2_state = 1;
+            relay_timer = 0;
+            relay_state = 1;
             break;
 
         case 1: // wait 2 seconds
-            if (++r2_timer >= 400)
+            if (++relay_timer >= 400)
             {
-                r2_timer = 0;
+                relay_timer = 0;
                 RELAY_2 = 1;
-                r2_state = 2;
+                RELAY_3 = 1;
+                relay_state = 2;
             }
             break;
 
         case 2: // relay ON for 3 seconds
-            if (++r2_timer >= 600)
+            if (++relay_timer >= 600)
             {
                 RELAY_2 = 0;
-                r2_state = 3;
+                RELAY_3 = 0;
+                relay_state = 3;
             }
             break;
 
@@ -109,11 +116,12 @@ void relay2_on_pump_start(void)
 }
 
 
-void reset_relay2_logic(void)
+void reset_starter_relay(void)
 {
-    r2_state = 0;
-    r2_timer = 0;
+    relay_state = 0;
+    relay_timer = 0;
     RELAY_2 = 0;
+    RELAY_3 = 0;
 }
 
 
@@ -139,6 +147,20 @@ unsigned char dry_run_check(void)
 }
 
 
+void toggle_motor(void)
+{
+    LED_PUMP_ON = on;
+    RELAY_1     = on;
+    motor_on    = on;
+
+    dry_run_timer = 0;
+    LED_DRY_RUN = 0;
+    
+    reset_starter_relay();
+}
+
+
+
     
 void main(void)
 {
@@ -149,42 +171,36 @@ void main(void)
         // Handle Dry Run
         if (dry_run)
         {
+            LED_TANK_LOW = 0;
             LED_DRY_RUN = 1;
+            
             if (!RESET_SW)
             {
                 dry_run = 0;
-                LED_DRY_RUN = 0;
-                dry_run_timer = 0;
-                
-                motor_on = 1;
-                LED_PUMP_ON = 1;
-                RELAY_1 = 1;
+                on = 1; toggle_motor();
+                alarm();
             } 
             continue;
-            
         }
         
         
        // Handle Tank full 
        if (!TANK_FULL && motor_on) {
-            motor_on = 0;
             LED_TANK_LOW = 0;
-            LED_PUMP_ON = 0;
-            RELAY_1 = 0;
-            dry_run_timer = 0;
-
+            on = 0; toggle_motor();
+            
             LED_TANK_FULL = 1;
             alarm();
+            
            __delay_ms(2000); // no loop delay, 2s
            LED_TANK_FULL = 0;
-           reset_relay2_logic();
+           
+           reset_starter_relay();
        }
        
        // Handle Tank Low 
        if (!TANK_LOW && !motor_on) {
-           motor_on = 1;
-           LED_PUMP_ON = 1;
-           RELAY_1 = 1;
+           on = 1; toggle_motor();
            LED_TANK_LOW = 1;
            alarm();
        } else if (!TANK_LOW && motor_on) {
@@ -196,18 +212,13 @@ void main(void)
        // Blink PUMP ON LED when motor is on
        if (motor_on) {
             pump_led_blink();
-            relay2_on_pump_start();
+            run_starter_relay();
             
             if (dry_run_check())
             {
-                motor_on = 0;
-                LED_PUMP_ON = 0;
-                LED_TANK_LOW = 0;
-                LED_TANK_FULL = 0;
-                RELAY_1 = 0;
-
                 dry_run = 1;
                 alarm();
+                on = 0; toggle_motor();
             }
        }
 
