@@ -163,7 +163,7 @@ void main(void)
             continue;
             
         }
-
+        
         
        // Handle Tank full 
        if (!TANK_FULL && motor_on) {
@@ -181,13 +181,13 @@ void main(void)
        }
        
        // Handle Tank Low 
-       if (TANK_LOW && !motor_on) {
+       if (!TANK_LOW && !motor_on) {
            motor_on = 1;
            LED_PUMP_ON = 1;
            RELAY_1 = 1;
            LED_TANK_LOW = 1;
            alarm();
-       } else if (TANK_LOW && motor_on) {
+       } else if (!TANK_LOW && motor_on) {
            LED_TANK_LOW = 1;
        } else {
            LED_TANK_LOW = 0;
