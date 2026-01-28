@@ -23,7 +23,7 @@ unsigned int motor_on = 0;
 unsigned int relay_timer = 0;
 unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
-unsigned int dry_run = 0;
+unsigned int dry_run_latched = 0;         // To detect losing dry run afterwards
 __bit on = 0;
 
 // ================= INITIALIZATION =================
@@ -127,22 +127,15 @@ void reset_starter_relay(void)
 
 unsigned char dry_run_check(void)
 {
-    if (!motor_on)
-    {
-        dry_run_timer = 0;
-        return 0;
-    }
-
-    if (dry_run_timer >= 2000)
-    {
-        return 1;   // dry run detected
-    }
+    if (!motor_on) { return 0; }
     
-    if (DRY_RUN) {
-        dry_run_timer++;
-    } else {
-        dry_run_timer = 0;
-    }
+    if (dry_run_latched && dry_run_timer >= 600) { return 1;} // Lost to dry run after 
+
+    if (dry_run_timer >= 2000) { return 1; } // Dry run detected
+    
+    if (DRY_RUN) { dry_run_timer++; }  // increase timer in DRY RUN not triggered
+    else { dry_run_timer = 0; dry_run_latched = 1; }
+    
     return 0;
 }
 
@@ -152,11 +145,13 @@ void toggle_motor(void)
     LED_PUMP_ON = on;
     RELAY_1     = on;
     motor_on    = on;
-
-    dry_run_timer = 0;
-    LED_DRY_RUN = 0;
     
     reset_starter_relay();
+    
+    if (on) {
+        dry_run_timer = 0;
+        LED_DRY_RUN = 0;
+    }
 }
 
 
@@ -169,14 +164,12 @@ void main(void)
     while(1)
     {
         // Handle Dry Run
-        if (dry_run)
+        if (LED_DRY_RUN)
         {
-            LED_TANK_LOW = 0;
-            LED_DRY_RUN = 1;
-            
-            if (!RESET_SW)
+            dry_run_latched = 1;
+            if (!RESET_SW) // Reset switch trigger
             {
-                dry_run = 0;
+                LED_DRY_RUN = 0;
                 on = 1; toggle_motor();
                 alarm();
             } 
@@ -184,44 +177,47 @@ void main(void)
         }
         
         
-       // Handle Tank full 
-       if (!TANK_FULL && motor_on) {
+        // Handle Tank full 
+        if (!TANK_FULL && motor_on && relay_timer >= 600) {
             LED_TANK_LOW = 0;
             on = 0; toggle_motor();
-            
+            dry_run_latched = 0;
+
             LED_TANK_FULL = 1;
             alarm();
-            
-           __delay_ms(2000); // no loop delay, 2s
-           LED_TANK_FULL = 0;
-           
-           reset_starter_relay();
-       }
+
+            __delay_ms(2000); // no loop delay, 2s
+            LED_TANK_FULL = 0;
+
+            reset_starter_relay();
+        }
        
-       // Handle Tank Low 
-       if (!TANK_LOW && !motor_on) {
-           on = 1; toggle_motor();
-           LED_TANK_LOW = 1;
-           alarm();
-       } else if (!TANK_LOW && motor_on) {
-           LED_TANK_LOW = 1;
-       } else {
-           LED_TANK_LOW = 0;
-       }
+        
+        // Handle Tank Low 
+        if (!TANK_LOW && !motor_on) {
+            on = 1; toggle_motor();
+            LED_TANK_LOW = 1;
+            alarm();
+        }
+        else if (!TANK_LOW && motor_on) { LED_TANK_LOW = 1; }
+        else { LED_TANK_LOW = 0; }
        
-       // Blink PUMP ON LED when motor is on
-       if (motor_on) {
+        
+        // Blink PUMP ON LED when motor is on
+        if (motor_on) {
             pump_led_blink();
             run_starter_relay();
             
-            if (dry_run_check())
+            if (dry_run_check()) // Dry run detected
             {
-                dry_run = 1;
+                LED_DRY_RUN = 1;
+                LED_TANK_LOW = 0;
+
                 alarm();
                 on = 0; toggle_motor();
             }
        }
 
-       __delay_ms(5);
+        __delay_ms(5);
    }
 }
