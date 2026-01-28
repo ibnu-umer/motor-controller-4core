@@ -15,18 +15,23 @@
 #pragma config LVP   = OFF
 
 #define _XTAL_FREQ 8000000
+#define BLINK_TICKS 100
 
 
+// =============== VARIABLES =============== //
 unsigned int blink_cnt = 0;
 __bit blink_state = 0;
 unsigned int motor_on = 0;
 unsigned int relay_timer = 0;
 unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
-unsigned int dry_run_latched = 0;         // To detect losing dry run afterwards
+unsigned int dry_run_latched = 0;      
 __bit on = 0;
 
-// ================= INITIALIZATION =================
+
+
+// ============ INITIALIZATION ============ // 
+
 void init_hw(void)
 {
     // Oscillator: 8 MHz internal
@@ -47,37 +52,34 @@ void init_hw(void)
 }
 
 
+// ================ HELPERS ================ //
+
 void alarm(void)
 {
-    BUZZER = 1;
-    __delay_ms(300);
-    BUZZER = 0;
-    __delay_ms(300);
-    BUZZER = 1;
-    __delay_ms(300);
+    BUZZER = 1; __delay_ms(300);
+    BUZZER = 0; __delay_ms(300);
+    BUZZER = 1; __delay_ms(300);
     BUZZER = 0;
 }
 
 
 void pump_led_blink(void)
 {
-    if (motor_on)   // pump is ON ? blink
-    {
-        blink_cnt++;
-
-        if (blink_cnt >= 100)   // ~500ms (depends on loop speed)
-        {
-            blink_cnt = 0;
-            blink_state ^= 1;
-            LED_PUMP_ON = blink_state;
-        }
-    }
-    else
+    if (!motor_on)
     {
         LED_PUMP_ON = 0;
-        blink_cnt = 0;
+        blink_cnt   = 0;
         blink_state = 0;
+        return;
     }
+
+    if (++blink_cnt >= BLINK_TICKS)
+    {
+        blink_cnt = 0;
+        blink_state ^= 1;
+    }
+
+    LED_PUMP_ON = blink_state;
 }
 
 
@@ -85,32 +87,26 @@ void run_starter_relay(void)
 {
     switch (relay_state)
     {
-        case 0: // idle
-            relay_timer = 0;
-            relay_state = 1;
-            break;
-
-        case 1: // wait 2 seconds
+        case 0: // 2 Seconds waiting
             if (++relay_timer >= 400)
             {
                 relay_timer = 0;
                 RELAY_2 = 1;
                 RELAY_3 = 1;
-                relay_state = 2;
+                relay_state = 1;
             }
             break;
 
-        case 2: // relay ON for 3 seconds
+        case 1: // Relay on for 3 seconds
             if (++relay_timer >= 600)
             {
                 RELAY_2 = 0;
                 RELAY_3 = 0;
-                relay_state = 3;
+                relay_state = 2;
             }
             break;
 
-        case 3:
-            // done, do nothing
+        case 2: // Done, do nothing
             break;
     }
 }
@@ -118,10 +114,8 @@ void run_starter_relay(void)
 
 void reset_starter_relay(void)
 {
-    relay_state = 0;
-    relay_timer = 0;
-    RELAY_2 = 0;
-    RELAY_3 = 0;
+    relay_state = 0; relay_timer = 0;
+    RELAY_2 = 0; RELAY_3 = 0;
 }
 
 
@@ -156,7 +150,8 @@ void toggle_motor(void)
 
 
 
-    
+// ================= MAIN ================= //
+
 void main(void)
 {
     init_hw();
@@ -222,8 +217,8 @@ void main(void)
                 alarm();
                 on = 0; toggle_motor();
             }
-       }
+        }
 
-        __delay_ms(5);
+        __delay_ms(5); // Small loop delay to reduce CPU load and stabilize loop timing
    }
 }
