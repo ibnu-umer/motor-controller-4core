@@ -131,9 +131,9 @@ unsigned char dry_run_check(void)
     
     if (!motor_on) { return 0; }
     
-    if (dry_run_latched && dry_run_timer >= 4000) { return 1;} // Lost to dry run after 
+    if (dry_run_latched && dry_run_timer >= 2000) { return 1;} // Lost to dry run after 
 
-    if (dry_run_timer >= 30000) { return 1; } // Dry run detected
+    if (dry_run_timer >= 4000) { return 1; } // Dry run detected
     
     if (DRY_RUN) { dry_run_timer++; }  // increase timer in DRY RUN not triggered
     else { dry_run_timer = 0; dry_run_latched = 1; }
@@ -183,7 +183,7 @@ void main(void)
     init_hw();
     
     // Delay before starting
-    __delay_ms(20000); alarm();
+    __delay_ms(5000); alarm();
     
     while(1)
     {
@@ -215,7 +215,7 @@ void main(void)
             LED_TANK_FULL = 1;
             alarm();
 
-            __delay_ms(20000); // no loop delay, 30s
+            __delay_ms(5000); // no loop delay, 20s
             LED_TANK_FULL = 0;
 
             reset_starter_relay();
