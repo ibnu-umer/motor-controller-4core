@@ -1,6 +1,7 @@
 #include <xc.h>
 #include "pins.h"
 #include "globals.h"
+#include "delays.h"
 
 // ================= CONFIG BITS =================
 #pragma config FOSC  = INTRC_NOCLKOUT   // Internal oscillator
@@ -93,8 +94,8 @@ void run_starter_relay(void)
 {
     switch (relay_state)
     {
-        case 0: // 2 Seconds waiting
-            if (++relay_timer >= 400)
+        case 0: // 3 Seconds waiting
+            if (++relay_timer >= DELAY_STARTER_RELAY)
             {
                 relay_timer = 0;
                 RELAY_2 = 1;
@@ -104,7 +105,7 @@ void run_starter_relay(void)
             break;
 
         case 1: // Relay on for 3 seconds
-            if (++relay_timer >= 600)
+            if (++relay_timer >= DELAY_STARTED_RELAY_ON)
             {
                 RELAY_2 = 0;
                 RELAY_3 = 0;
@@ -131,9 +132,9 @@ unsigned char dry_run_check(void)
     
     if (!motor_on) { return 0; }
     
-    if (dry_run_latched && dry_run_timer >= 2000) { return 1;} // Lost to dry run after 
+    if (dry_run_latched && dry_run_timer >= DELAY_DRY_RUN_AFTER) { return 1;} // Lost to dry run after 
 
-    if (dry_run_timer >= 4000) { return 1; } // Dry run detected
+    if (dry_run_timer >= DELAY_DRY_RUN) { return 1; } // Dry run detected
     
     if (DRY_RUN) { dry_run_timer++; }  // increase timer in DRY RUN not triggered
     else { dry_run_timer = 0; dry_run_latched = 1; }
@@ -183,7 +184,7 @@ void main(void)
     init_hw();
     
     // Delay before starting
-    __delay_ms(5000); alarm();
+    __delay_ms(DELAY_START_UP); alarm();
     
     while(1)
     {
@@ -215,7 +216,7 @@ void main(void)
             LED_TANK_FULL = 1;
             alarm();
 
-            __delay_ms(5000); // no loop delay, 20s
+            __delay_ms(TANK_FULL_DELAY); 
             LED_TANK_FULL = 0;
 
             reset_starter_relay();

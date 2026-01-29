@@ -6,6 +6,8 @@
                    projectFiles="true">
       <itemPath>pins.h</itemPath>
       <itemPath>globals.h</itemPath>
+      <itemPath>delays.h</itemPath>
+      <itemPath>config.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
