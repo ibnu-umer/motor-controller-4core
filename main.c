@@ -2,6 +2,7 @@
 #include "pins.h"
 #include "globals.h"
 #include "delays.h"
+#include "config.h"
 
 // ================= CONFIG BITS =================
 #pragma config FOSC  = INTRC_NOCLKOUT   // Internal oscillator
@@ -15,9 +16,6 @@
 #pragma config FCMEN = OFF
 #pragma config LVP   = OFF
 
-#define _XTAL_FREQ 8000000
-#define BLINK_TICKS 100
-#define TANK_LOW_VEC_SIZE 10
 
 
 // =============== VARIABLES =============== //
@@ -27,7 +25,7 @@ unsigned int motor_on = 0;
 unsigned int relay_timer = 0;
 unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
-unsigned int dry_run_latched = 0;     
+unsigned int dry_run_latched = 0;
 unsigned int tank_low_all_zero = 0;
 unsigned char tank_low_vec[TANK_LOW_VEC_SIZE];
 unsigned char vec_idx = 0;
