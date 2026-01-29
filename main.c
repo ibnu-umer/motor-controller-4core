@@ -1,8 +1,8 @@
 #include <xc.h>
+#include "config.h"
 #include "pins.h"
 #include "globals.h"
 #include "delays.h"
-#include "config.h"
 
 // ================= CONFIG BITS =================
 #pragma config FOSC  = INTRC_NOCLKOUT   // Internal oscillator
@@ -20,11 +20,11 @@
 
 // =============== VARIABLES =============== //
 unsigned int blink_cnt = 0;
-__bit blink_state = 0;
 unsigned int motor_on = 0;
 unsigned int relay_timer = 0;
 unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
+unsigned int dry_run_reset_timer = 0;
 unsigned int dry_run_latched = 0;
 unsigned int tank_low_all_zero = 0;
 unsigned char tank_low_vec[TANK_LOW_VEC_SIZE];
@@ -69,22 +69,9 @@ void alarm(void)
 
 
 void pump_led_blink(void)
-{
-    if (!motor_on)
-    {
-        LED_PUMP_ON = 0;
-        blink_cnt   = 0;
-        blink_state = 0;
-        return;
-    }
-
-    if (++blink_cnt >= BLINK_TICKS)
-    {
-        blink_cnt = 0;
-        blink_state ^= 1;
-    }
-
-    LED_PUMP_ON = blink_state;
+{ 
+    if (blink_cnt >= DELAY_LED_PUMP_ON)
+    { blink_cnt = 0; LED_PUMP_ON ^= 1;  }
 }
 
 
@@ -93,7 +80,7 @@ void run_starter_relay(void)
     switch (relay_state)
     {
         case 0: // 3 Seconds waiting
-            if (++relay_timer >= DELAY_STARTER_RELAY)
+            if (relay_timer >= DELAY_STARTER_RELAY)
             {
                 relay_timer = 0;
                 RELAY_2 = 1;
@@ -103,7 +90,7 @@ void run_starter_relay(void)
             break;
 
         case 1: // Relay on for 3 seconds
-            if (++relay_timer >= DELAY_STARTED_RELAY_ON)
+            if (relay_timer >= DELAY_STARTED_RELAY_ON)
             {
                 RELAY_2 = 0;
                 RELAY_3 = 0;
@@ -126,16 +113,9 @@ void reset_starter_relay(void)
 
 unsigned char dry_run_check(void)
 {
-    // dry_run_timer : 10 seconds = 2000
-    
-    if (!motor_on) { return 0; }
-    
     if (dry_run_latched && dry_run_timer >= DELAY_DRY_RUN_AFTER) { return 1;} // Lost to dry run after 
 
     if (dry_run_timer >= DELAY_DRY_RUN) { return 1; } // Dry run detected
-    
-    if (DRY_RUN) { dry_run_timer++; }  // increase timer in DRY RUN not triggered
-    else { dry_run_timer = 0; dry_run_latched = 1; }
     
     return 0;
 }
@@ -150,6 +130,8 @@ void toggle_motor(void)
     
     if (motor_on) { // If motor turned on, reset dry run
         dry_run_timer = 0;
+        dry_run_latched = 0;
+        dry_run_reset_timer = 0;
         LED_DRY_RUN = 0;
     }
 }
@@ -175,38 +157,76 @@ unsigned int tank_low_check(void)
 }
 
 
+// =============== TIMER ================== //
+
+void __interrupt() isr(void)
+{
+    if (PIR1bits.TMR1IF) {
+        PIR1bits.TMR1IF = 0;
+        TMR1 = TMR1_RELOAD;
+
+        // Increment counters
+        blink_cnt++;
+        relay_timer++;
+        
+        if (DRY_RUN) { dry_run_timer++; }
+        
+        if (LED_DRY_RUN) { dry_run_reset_timer++; }
+    }
+}
+
+
+void init_timer(void)
+{
+    T1CON = 0;
+    T1CONbits.T1CKPS = 0b11;   // prescaler 1:8
+    TMR1 = TMR1_RELOAD;
+
+    PIR1bits.TMR1IF = 0;
+    PIE1bits.TMR1IE = 1;
+
+    INTCONbits.PEIE = 1;
+    INTCONbits.GIE  = 1;
+
+    T1CONbits.TMR1ON = 1;
+}
+
+
 // ================= MAIN ================= //
 
 void main(void)
 {
+    OSCCON = 0b01110000;
+    
     init_hw();
+    init_timer();
     
     // Delay before starting
     __delay_ms(DELAY_START_UP); alarm();
     
-    while(1)
+    while(1)    
     {
         
         // Handle Reset switch trigger
         if (!RESET_SW && !motor_on) 
         {
-            LED_DRY_RUN = 0;
-            motor_on = 1; toggle_motor();
-            alarm();
+            motor_on = 1; toggle_motor(); alarm();
         } 
         
         
         // Handle Dry Run
         if (LED_DRY_RUN)
         {
-            dry_run_latched = 1;
-            __delay_ms(5);
-            continue;
+            if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
+                motor_on = 1; toggle_motor(); alarm();
+            }
+            __delay_ms(10); // Reduce CPU hammering with a little delay
+            continue;  // The code below doesn't gonna run
         }
         
         
         // Handle Tank full 
-        if (!TANK_FULL && motor_on && relay_timer >= 600) {
+        if (!TANK_FULL && motor_on && relay_timer >= 30) {
             LED_TANK_LOW = 0;
             motor_on = 0; toggle_motor();
             dry_run_latched = 0;
@@ -214,7 +234,7 @@ void main(void)
             LED_TANK_FULL = 1;
             alarm();
 
-            __delay_ms(TANK_FULL_DELAY); 
+            __delay_ms(DELAY_TANK_FULL); 
             LED_TANK_FULL = 0;
 
             reset_starter_relay();
@@ -233,13 +253,18 @@ void main(void)
             pump_led_blink();
             run_starter_relay();
             
-            if (dry_run_check()) // Dry run detected
-            {
-                LED_DRY_RUN = 1;
-                LED_TANK_LOW = 0;
-
-                alarm();
-                motor_on = 0; toggle_motor();
+            if (DRY_RUN) {
+                LED_DRY_RUN = dry_run_check() ? 1: 0;
+                
+                if (LED_DRY_RUN) {
+                    LED_TANK_LOW = 0;
+                    
+                    alarm();
+                    motor_on = 0; toggle_motor();
+                }
+            } else {
+                dry_run_timer = 0;
+                dry_run_latched = 1;
             }
         }
 
