@@ -1,9 +1,11 @@
+#include "config.h"
+
+
 #ifndef DELAYS_H
 #define DELAYS_H
 
-#include "config.h"
 
-#if defined(BUILD_PRODUCTION)
+#if defined(PRODUCTION)
 
 // PRODUCTION LEVEL TIMER DELAYS
 #define DELAY_START_UP          20000
