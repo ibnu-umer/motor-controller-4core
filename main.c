@@ -128,12 +128,15 @@ void toggle_motor(unsigned char on)
     
     reset_starter_relay();
     
-    if (motor_on) { // If motor turned on, reset dry run
-        dry_run_timer = 0;
-        dry_run_latched = 0;
-        dry_run_reset_timer = 0;
-        LED_DRY_RUN = 0;
-    }
+    if (motor_on) { reset_dry_run(); }
+}
+
+
+void reset_dry_run(void) {
+    dry_run_timer = 0;
+    dry_run_latched = 0;
+    dry_run_reset_timer = 0;
+    LED_DRY_RUN = 0;
 }
 
 
