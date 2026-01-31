@@ -241,7 +241,7 @@ void main(void)
             // Handle Dry Run
             if (DRY_RUN) {
                 LED_DRY_RUN = dry_run_check() ? 1: 0;
-                if (LED_DRY_RUN) { LED_TANK_LOW = 0; toggle_motor(0); alarm(1);  continue; }
+                if (LED_DRY_RUN) { toggle_motor(0); alarm(1);  continue; }
             } 
             else { dry_run_timer = 0; dry_run_latched = 1; }
 
@@ -249,19 +249,19 @@ void main(void)
         
         else 
         {
+            // Handle Reset switch trigger
+            if (!RESET_SW) { toggle_motor(1); alarm(0); } 
+            
             // Handle Dry Run
-            if (LED_DRY_RUN)
+            else if (LED_DRY_RUN)
             {
                 if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
                     toggle_motor(1); alarm(0);
                 }
             }
-            
-            // Handle Reset switch trigger
-            if (!RESET_SW) { toggle_motor(1); alarm(0); } 
-            
+
             // Handle Tank Low 
-            if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
+            else if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
         }
 
         __delay_ms(5); // Small loop delay to reduce CPU load and stabilize loop timing
