@@ -62,8 +62,8 @@ void init_hw(void)
 void alarm(unsigned int type)  // type - 0: normal, 1: warning
 {
     if (type) {
-        for (unsigned int i = 0; i < 5; i++)
-        { BUZZER = 1; __delay_ms(700); BUZZER = 0; __delay_ms(700); }
+        for (unsigned int i = 0; i < 4; i++)
+        { BUZZER = 1; __delay_ms(1000); BUZZER = 0; __delay_ms(700); }
     }
     
     else { 
