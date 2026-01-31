@@ -121,10 +121,11 @@ unsigned char dry_run_check(void)
 }
 
 
-void toggle_motor(void)
+void toggle_motor(unsigned char on)
 {
-    LED_PUMP_ON = motor_on ? 1: 0;
-    RELAY_1     = motor_on ? 1: 0;
+    LED_PUMP_ON = on ? 1 : 0;
+    RELAY_1     = on ? 1 : 0;
+    motor_on    = on;
     
     reset_starter_relay();
     
@@ -206,11 +207,13 @@ void main(void)
     
     while(1)    
     {
+        LED_TANK_LOW = tank_low_check() ? 1 : 0;
+
         
         // Handle Reset switch trigger
         if (!RESET_SW && !motor_on) 
         {
-            motor_on = 1; toggle_motor(); alarm();
+            toggle_motor(1); alarm();
         } 
         
         
@@ -218,7 +221,7 @@ void main(void)
         if (LED_DRY_RUN)
         {
             if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
-                motor_on = 1; toggle_motor(); alarm();
+                toggle_motor(1); alarm();
             }
             __delay_ms(10); // Reduce CPU hammering with a little delay
             continue;  // The code below doesn't gonna run
@@ -228,7 +231,7 @@ void main(void)
         // Handle Tank full 
         if (!TANK_FULL && motor_on && relay_timer >= 30) {
             LED_TANK_LOW = 0;
-            motor_on = 0; toggle_motor();
+            toggle_motor(0);
             dry_run_latched = 0;
 
             LED_TANK_FULL = 1;
@@ -242,9 +245,8 @@ void main(void)
        
         
         // Handle Tank Low 
-        LED_TANK_LOW = tank_low_check() ? 1 : 0;
         if (LED_TANK_LOW && !motor_on) {
-            motor_on = 1; toggle_motor();
+            toggle_motor(1);
             alarm();
         }
 
@@ -260,7 +262,7 @@ void main(void)
                     LED_TANK_LOW = 0;
                     
                     alarm();
-                    motor_on = 0; toggle_motor();
+                    toggle_motor(0);
                 }
             } else {
                 dry_run_timer = 0;
