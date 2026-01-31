@@ -26,7 +26,7 @@ unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
 unsigned int dry_run_reset_timer = 0;
 unsigned int dry_run_latched = 0;
-
+unsigned int sump_low_latched = 0;
 
 
 // ============ INITIALIZATION ============ // 
@@ -162,6 +162,14 @@ unsigned char sensor_low_check(sensor_filter_t *s, unsigned char input)
 }
 
 
+void warn_sump_low(void) {
+    for (unsigned int i = 0; i < 3; i++) {
+        BUZZER = 1; LED_SUMP_LOW = 1; __delay_ms(400);
+        BUZZER = 0; LED_SUMP_LOW = 0; __delay_ms(400);
+    }
+    LED_SUMP_LOW = 1;
+}
+
 // =============== TIMER ================== //
 
 void __interrupt() isr(void)
@@ -243,24 +251,49 @@ void main(void)
                 if (LED_DRY_RUN) { toggle_motor(0); alarm(1);  continue; }
             } 
             else { dry_run_timer = 0; dry_run_latched = 1; }
+            
+            
+            // Handle Sump Low
+            if (LED_SUMP_LOW) {
+                toggle_motor(0); alarm(1); sump_low_latched = 1;
+            }
            
         }
         
         else 
         {
-            // Handle Reset switch trigger
-            if (!RESET_SW) { toggle_motor(1); alarm(0); } 
+            if (!LED_SUMP_LOW) {
+                
+                // Handle Reset switch trigger
+                if (!RESET_SW) { toggle_motor(1); alarm(0); sump_low_latched = 0; continue; } 
+                
+                // TANK LOW and DRY RUN auto reset only works if not off by sump low
+                if (!sump_low_latched) {
             
-            // Handle Dry Run
-            else if (LED_DRY_RUN)
-            {
-                if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
-                    toggle_motor(1); alarm(0);
+                    // Handle Dry Run
+                    if (LED_DRY_RUN)
+                    {
+                        if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
+                            toggle_motor(1); alarm(0);
+                        }
+                    }
+
+                    // Handle Tank Low 
+                    else if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
+                }
+                
+                else if (SUMP_HIGH) {
+                    toggle_motor(1); alarm(0); sump_low_latched = 0;
+                    LED_TANK_FULL = 1; __delay_ms(400); LED_TANK_FULL = 0;
+                }
+            } 
+            
+            else {
+                
+                if (!RESET_SW) {
+                    warn_sump_low();
                 }
             }
-
-            // Handle Tank Low 
-            else if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
         }
 
         __delay_ms(5); // Small loop delay to reduce CPU load and stabilize loop timing
