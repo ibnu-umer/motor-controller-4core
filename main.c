@@ -120,6 +120,15 @@ unsigned char dry_run_check(void)
 }
 
 
+void reset_dry_run(void) 
+{
+    dry_run_timer = 0;
+    dry_run_latched = 0;
+    dry_run_reset_timer = 0;
+    LED_DRY_RUN = 0;
+}
+
+
 void toggle_motor(unsigned char on)
 {
     LED_PUMP_ON = on ? 1 : 0;
@@ -129,14 +138,6 @@ void toggle_motor(unsigned char on)
     reset_starter_relay();
     
     if (motor_on) { reset_dry_run(); }
-}
-
-
-void reset_dry_run(void) {
-    dry_run_timer = 0;
-    dry_run_latched = 0;
-    dry_run_reset_timer = 0;
-    LED_DRY_RUN = 0;
 }
 
 
