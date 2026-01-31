@@ -208,66 +208,55 @@ void main(void)
     while(1)    
     {
         LED_TANK_LOW = tank_low_check() ? 1 : 0;
-
         
-        // Handle Reset switch trigger
-        if (!RESET_SW && !motor_on) 
+        
+        
+        if (motor_on)
         {
-            toggle_motor(1); alarm();
-        } 
-        
-        
-        // Handle Dry Run
-        if (LED_DRY_RUN)
-        {
-            if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
-                toggle_motor(1); alarm();
-            }
-            __delay_ms(10); // Reduce CPU hammering with a little delay
-            continue;  // The code below doesn't gonna run
-        }
-        
-        
-        // Handle Tank full 
-        if (!TANK_FULL && motor_on && relay_timer >= 30) {
-            LED_TANK_LOW = 0;
-            toggle_motor(0);
-            dry_run_latched = 0;
-
-            LED_TANK_FULL = 1;
-            alarm();
-
-            __delay_ms(DELAY_TANK_FULL); 
-            LED_TANK_FULL = 0;
-
-            reset_starter_relay();
-        }
-       
-        
-        // Handle Tank Low 
-        if (LED_TANK_LOW && !motor_on) {
-            toggle_motor(1);
-            alarm();
-        }
-
-        
-        if (motor_on) {
             pump_led_blink();
             run_starter_relay();
             
+            
+            // Handle Tank full 
+            if (!TANK_FULL && relay_timer >= 30) {
+                LED_TANK_LOW = 0;
+                toggle_motor(0);
+                dry_run_latched = 0;
+
+                LED_TANK_FULL = 1;
+                alarm();
+
+                __delay_ms(DELAY_TANK_FULL); 
+                LED_TANK_FULL = 0;
+
+                reset_starter_relay();
+                continue;
+            }
+            
+            // Handle Dry Run
             if (DRY_RUN) {
                 LED_DRY_RUN = dry_run_check() ? 1: 0;
-                
-                if (LED_DRY_RUN) {
-                    LED_TANK_LOW = 0;
-                    
-                    alarm();
-                    toggle_motor(0);
+                if (LED_DRY_RUN) { LED_TANK_LOW = 0; alarm(); toggle_motor(0); continue; }
+            } 
+            else { dry_run_timer = 0; dry_run_latched = 1; }
+
+        }
+        
+        else 
+        {
+            // Handle Dry Run
+            if (LED_DRY_RUN)
+            {
+                if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
+                    toggle_motor(1); alarm();
                 }
-            } else {
-                dry_run_timer = 0;
-                dry_run_latched = 1;
             }
+            
+            // Handle Reset switch trigger
+            if (!RESET_SW) { toggle_motor(1); alarm(); } 
+            
+            // Handle Tank Low 
+            if (LED_TANK_LOW) { toggle_motor(1); alarm(); }
         }
 
         __delay_ms(5); // Small loop delay to reduce CPU load and stabilize loop timing
