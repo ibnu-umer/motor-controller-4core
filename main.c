@@ -26,12 +26,6 @@ unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
 unsigned int dry_run_reset_timer = 0;
 unsigned int dry_run_latched = 0;
-unsigned int tank_low_all_zero = 0;
-unsigned char tank_low_vec[CHECK_VEC_SIZE];
-unsigned char tl_vec_idx = 0;
-unsigned int sump_low_all_zero = 0;
-unsigned char sump_low_vec[CHECK_VEC_SIZE];
-unsigned char sl_vec_idx = 0;
 
 
 
@@ -54,12 +48,6 @@ void init_hw(void)
     // Clear outputs
     PORTB = 0x00;
     PORTC = 0x00;
-    
-    for (unsigned char i = 0; i < CHECK_VEC_SIZE; i++)
-        tank_low_vec[i] = 1;  
-    
-    for (unsigned char i = 0; i < CHECK_VEC_SIZE; i++)
-        sump_low_vec[i] = 1; 
 }
 
 
@@ -149,39 +137,28 @@ void toggle_motor(unsigned char on)
 }
 
 
-unsigned int tank_low_check(void)
+typedef struct {
+    unsigned int count;
+    unsigned int idx;
+    unsigned char stable_zero;
+} sensor_filter_t;
+
+sensor_filter_t tank_low_filt = {0};
+sensor_filter_t sump_low_filt = {0};
+
+unsigned char sensor_low_check(sensor_filter_t *s, unsigned char input)
 {
-    tank_low_vec[tl_vec_idx] = !TANK_LOW;
-    tl_vec_idx++;
-    if (tl_vec_idx >= CHECK_VEC_SIZE)
-        tl_vec_idx = 0;
-        tank_low_all_zero = 1;
-        
-        for ( unsigned int i = 0; i < CHECK_VEC_SIZE; i++)
-        {
-            // if vector contains any 1's
-            if (tank_low_vec[i]) { tank_low_all_zero = 0; break; }
-        }
+    s->count += !input;
+    s->idx++;
 
-    return tank_low_all_zero;   // 1: all zero, 0: not all zero
-}
+    if (s->idx >= 10)
+    {
+        s->idx = 0;
+        s->stable_zero = (s->count == 0);
+        s->count = 0;
+    }
 
-
-unsigned int sump_low_check(void)
-{
-    sump_low_vec[sl_vec_idx] = !SUMP_LOW;
-    sl_vec_idx++;
-    if (sl_vec_idx >= CHECK_VEC_SIZE)
-        sl_vec_idx = 0;
-        sump_low_all_zero = 1;
-        
-        for (unsigned int i = 0; i < CHECK_VEC_SIZE; i++)
-        {
-            // if vector contains any 1's
-            if (sump_low_vec[i]) { sump_low_all_zero = 0; break; }
-        }
-
-    return sump_low_all_zero;   // 1: all zero, 0: not all zero
+    return s->stable_zero;
 }
 
 
@@ -234,8 +211,8 @@ void main(void)
     
     while(1)    
     {
-        LED_TANK_LOW = tank_low_check() ? 1 : 0;
-        LED_SUMP_LOW = sump_low_check() ? 1 : 0;
+        LED_TANK_LOW = sensor_low_check(&tank_low_filt, TANK_LOW) ? 1 : 0;
+        LED_SUMP_LOW = sensor_low_check(&sump_low_filt, SUMP_LOW) ? 1 : 0;
 
         
         if (motor_on)
@@ -266,7 +243,7 @@ void main(void)
                 if (LED_DRY_RUN) { toggle_motor(0); alarm(1);  continue; }
             } 
             else { dry_run_timer = 0; dry_run_latched = 1; }
-
+           
         }
         
         else 
