@@ -59,12 +59,17 @@ void init_hw(void)
 
 // ================ HELPERS ================ //
 
-void alarm(void)
+void alarm(unsigned int type)  // type - 0: normal, 1: warning
 {
-    BUZZER = 1; __delay_ms(400);
-    BUZZER = 0; __delay_ms(400);
-    BUZZER = 1; __delay_ms(400);
-    BUZZER = 0;
+    if (type) {
+        for (unsigned int i = 0; i < 5; i++)
+        { BUZZER = 1; __delay_ms(700); BUZZER = 0; __delay_ms(700); }
+    }
+    
+    else { 
+        for (unsigned int i = 0; i < 3; i++)
+        { BUZZER = 1; __delay_ms(400); BUZZER = 0; __delay_ms(400); }
+    }
 }
 
 
@@ -203,7 +208,7 @@ void main(void)
     init_timer();
     
     // Delay before starting
-    __delay_ms(DELAY_START_UP); alarm();
+    __delay_ms(DELAY_START_UP); alarm(0);
     
     while(1)    
     {
@@ -224,7 +229,7 @@ void main(void)
                 dry_run_latched = 0;
 
                 LED_TANK_FULL = 1;
-                alarm();
+                alarm(0);
 
                 __delay_ms(DELAY_TANK_FULL); 
                 LED_TANK_FULL = 0;
@@ -236,7 +241,7 @@ void main(void)
             // Handle Dry Run
             if (DRY_RUN) {
                 LED_DRY_RUN = dry_run_check() ? 1: 0;
-                if (LED_DRY_RUN) { LED_TANK_LOW = 0; alarm(); toggle_motor(0); continue; }
+                if (LED_DRY_RUN) { LED_TANK_LOW = 0; toggle_motor(0); alarm(1);  continue; }
             } 
             else { dry_run_timer = 0; dry_run_latched = 1; }
 
@@ -248,15 +253,15 @@ void main(void)
             if (LED_DRY_RUN)
             {
                 if (dry_run_reset_timer >= DELAY_DRY_RUN_RESET) {
-                    toggle_motor(1); alarm();
+                    toggle_motor(1); alarm(0);
                 }
             }
             
             // Handle Reset switch trigger
-            if (!RESET_SW) { toggle_motor(1); alarm(); } 
+            if (!RESET_SW) { toggle_motor(1); alarm(0); } 
             
             // Handle Tank Low 
-            if (LED_TANK_LOW) { toggle_motor(1); alarm(); }
+            if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
         }
 
         __delay_ms(5); // Small loop delay to reduce CPU load and stabilize loop timing
