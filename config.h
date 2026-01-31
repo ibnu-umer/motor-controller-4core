@@ -5,8 +5,7 @@
 
 #define _XTAL_FREQ            8000000
 #define BLINK_TICKS           1
-#define TANK_LOW_VEC_SIZE     10
-
+#define CHECK_VEC_SIZE        10
 #define TMR1_RELOAD           40536  // 100ms
 
 #endif
