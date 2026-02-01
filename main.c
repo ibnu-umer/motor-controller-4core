@@ -166,13 +166,19 @@ unsigned char sensor_low_check(sensor_filter_t *s, unsigned char input)
 }
 
 
-void warn_sump_low(void) {
+void warn_sump_low(void) 
+{
     for (unsigned int i = 0; i < 3; i++) {
         BUZZER = 1; LED_SUMP_LOW = 1; __delay_ms(400);
         BUZZER = 0; LED_SUMP_LOW = 0; __delay_ms(400);
     }
     LED_SUMP_LOW = 1;
 }
+
+
+void delay_ms_long(unsigned int ms) 
+{ while (ms--) { __delay_ms(1); } }
+
 
 // =============== TIMER ================== //
 
@@ -242,7 +248,7 @@ void main(void)
                 LED_TANK_FULL = 1;
                 alarm(0);
 
-                __delay_ms(DELAY_TANK_FULL); 
+                delay_ms_long(DELAY_TANK_FULL);
                 LED_TANK_FULL = 0;
 
                 reset_starter_relay();
