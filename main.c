@@ -137,7 +137,7 @@ void toggle_motor(unsigned char on)
     
     reset_starter_relay();
     
-    if (motor_on) { reset_dry_run(); }
+    if (motor_on) { reset_dry_run(); sump_low_latched = 0; }
 }
 
 
@@ -275,7 +275,7 @@ void main(void)
             if (!LED_SUMP_LOW) {
                 
                 // Handle Reset switch trigger
-                if (!RESET_SW) { toggle_motor(1); alarm(0); sump_low_latched = 0; continue; } 
+                if (!RESET_SW) { toggle_motor(1); alarm(0); continue; } 
                 
                 // TANK LOW and DRY RUN auto reset only works if not off by sump low
                 if (!sump_low_latched) {
@@ -289,11 +289,11 @@ void main(void)
                     }
 
                     // Handle Tank Low 
-                    else if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
+                    else if (LED_TANK_LOW) { toggle_motor(1); alarm(0);  }
                 }
                 
                 else if (!SUMP_HIGH) {
-                    toggle_motor(1); alarm(0); sump_low_latched = 0;
+                    toggle_motor(1); alarm(0); 
                 }
             } 
             
