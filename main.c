@@ -24,7 +24,7 @@ unsigned int motor_on = 0;
 unsigned int relay_timer = 0;
 unsigned char relay_state = 0;
 unsigned int dry_run_timer = 0;
-unsigned int dry_run_reset_timer = 0;
+unsigned long dry_run_reset_timer = 0;
 unsigned int dry_run_latched = 0;
 unsigned int sump_low_latched = 0;
 
