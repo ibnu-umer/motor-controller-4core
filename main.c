@@ -9,7 +9,7 @@
 #pragma config WDTE  = OFF
 #pragma config PWRTE = ON
 #pragma config MCLRE = ON
-#pragma config CP    = OFF
+#pragma config CP    = ON
 #pragma config CPD   = OFF
 #pragma config BOREN = ON
 #pragma config IESO  = OFF
