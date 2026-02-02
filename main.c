@@ -292,9 +292,8 @@ void main(void)
                     else if (LED_TANK_LOW) { toggle_motor(1); alarm(0); }
                 }
                 
-                else if (SUMP_HIGH) {
+                else if (!SUMP_HIGH) {
                     toggle_motor(1); alarm(0); sump_low_latched = 0;
-                    LED_TANK_FULL = 1; __delay_ms(400); LED_TANK_FULL = 0;
                 }
             } 
             
