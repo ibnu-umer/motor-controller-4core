@@ -6,7 +6,7 @@
 
 #define DELAY_STARTER_RELAY     30     // 30 x 100ms = 3s
 #define DELAY_STARTED_RELAY_ON  30
-#define DELAY_LED_PUMP_ON       5 
+#define DELAY_LED_BLINK         5 
 
 
 // PRODUCTION LEVEL TIMER DELAYS

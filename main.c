@@ -26,8 +26,9 @@ unsigned char relay_state         = 0;
 unsigned int dry_run_timer        = 0;
 unsigned long dry_run_reset_timer = 0;
 unsigned int dry_run_latched      = 0;
+unsigned int sump_low             = 0;
 unsigned int sump_low_latched     = 0;
-unsigned int tank_full_delay_cnt       = 0;
+unsigned int tank_full_delay_cnt  = 0;
 
 
 // ============ INITIALIZATION ============ // 
@@ -68,10 +69,13 @@ void alarm(unsigned int type)  // type - 0: normal, 1: warning
 }
 
 
-void pump_led_blink(void)
+void led_blink(void)
 { 
-    if (blink_cnt >= DELAY_LED_PUMP_ON)
-    { blink_cnt = 0; LED_PUMP_ON ^= 1;  }
+    if (blink_cnt >= DELAY_LED_BLINK) {
+        if (motor_on) { LED_PUMP_ON ^= 1; } else { LED_PUMP_ON = 0; }
+        if (sump_low) { LED_SUMP_LOW ^= 1; } else { LED_SUMP_LOW = 0; }
+        blink_cnt = 0;
+    }
 }
 
 
@@ -177,10 +181,6 @@ void warn_sump_low(void)
 }
 
 
-void delay_ms_long(unsigned int ms) 
-{ while (ms--) { __delay_ms(1); } }
-
-
 // =============== TIMER ================== //
 
 void __interrupt() isr(void)
@@ -254,14 +254,13 @@ void main(void)
         
         
         LED_TANK_LOW = sensor_low_check(&tank_low_filt, TANK_LOW) ? 1 : 0;
-        LED_SUMP_LOW = sensor_low_check(&sump_low_filt, SUMP_LOW) ? 1 : 0;
-
+        sump_low = sensor_low_check(&sump_low_filt, SUMP_LOW) ? 1 : 0;
+        
+        led_blink();
         
         if (motor_on)
         {
-            pump_led_blink();
             run_starter_relay();
-            
             
             // Handle Tank full 
             if (!TANK_FULL) {
@@ -285,7 +284,8 @@ void main(void)
             
             
             // Handle Sump Low
-            if (LED_SUMP_LOW) {
+            if (sump_low) {
+                LED_SUMP_LOW = 1;
                 toggle_motor(0); alarm(1); sump_low_latched = 1;
             }
            
@@ -293,7 +293,7 @@ void main(void)
         
         else 
         {
-            if (!LED_SUMP_LOW) {
+            if (!sump_low) {
                 
                 // Handle Reset switch trigger
                 if (!RESET_SW) { toggle_motor(1); alarm(0); continue; } 
