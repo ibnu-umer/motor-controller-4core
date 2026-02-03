@@ -1,6 +1,3 @@
-#include "config.h"
-
-
 #ifndef DELAYS_H
 #define DELAYS_H
 
