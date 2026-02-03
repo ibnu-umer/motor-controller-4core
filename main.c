@@ -19,14 +19,15 @@
 
 
 // =============== VARIABLES =============== //
-unsigned int blink_cnt = 0;
-unsigned int motor_on = 0;
-unsigned int relay_timer = 0;
-unsigned char relay_state = 0;
-unsigned int dry_run_timer = 0;
+unsigned int blink_cnt            = 0;
+unsigned int motor_on             = 0;
+unsigned int relay_timer          = 0;
+unsigned char relay_state         = 0;
+unsigned int dry_run_timer        = 0;
 unsigned long dry_run_reset_timer = 0;
-unsigned int dry_run_latched = 0;
-unsigned int sump_low_latched = 0;
+unsigned int dry_run_latched      = 0;
+unsigned int sump_low_latched     = 0;
+unsigned int tank_full_delay_cnt       = 0;
 
 
 // ============ INITIALIZATION ============ // 
@@ -81,7 +82,7 @@ void run_starter_relay(void)
         case 0: // 3 Seconds waiting
             if (relay_timer >= DELAY_STARTER_RELAY)
             {
-                relay_timer = 0;
+                relay_timer = 1;
                 RELAY_2 = 1;
                 RELAY_3 = 1;
                 relay_state = 1;
@@ -131,9 +132,9 @@ void reset_dry_run(void)
 
 void toggle_motor(unsigned char on)
 {
-    LED_PUMP_ON = on ? 1 : 0;
-    RELAY_1     = on ? 1 : 0;
-    motor_on    = on;
+    LED_PUMP_ON   = on ? 1 : 0;
+    RELAY_1       = on ? 1 : 0;
+    motor_on      = on;
     
     reset_starter_relay();
     
@@ -192,6 +193,9 @@ void __interrupt() isr(void)
         blink_cnt++;
         relay_timer++;
         
+        
+        if (LED_TANK_FULL) {tank_full_delay_cnt++; }
+        
         if (DRY_RUN) { dry_run_timer++; }
         
         if (LED_DRY_RUN) { dry_run_reset_timer++; }
@@ -229,6 +233,26 @@ void main(void)
     
     while(1)    
     {
+        if (LED_TANK_FULL) {
+            
+            // Handle Tank Full Delay
+            if (tank_full_delay_cnt >= DELAY_TANK_FULL)
+            {
+                LED_TANK_FULL = 0;
+                reset_starter_relay();
+            }
+            
+            // Handle RESET
+            else if (!RESET_SW) {
+                LED_TANK_FULL = 0;
+                reset_starter_relay();
+                toggle_motor(1); alarm(0);
+            }
+            
+            continue;
+        }
+        
+        
         LED_TANK_LOW = sensor_low_check(&tank_low_filt, TANK_LOW) ? 1 : 0;
         LED_SUMP_LOW = sensor_low_check(&sump_low_filt, SUMP_LOW) ? 1 : 0;
 
@@ -240,7 +264,7 @@ void main(void)
             
             
             // Handle Tank full 
-            if (!TANK_FULL && relay_timer >= 30) {
+            if (!TANK_FULL) {
                 LED_TANK_LOW = 0;
                 toggle_motor(0);
                 dry_run_latched = 0;
@@ -248,10 +272,7 @@ void main(void)
                 LED_TANK_FULL = 1;
                 alarm(0);
 
-                delay_ms_long(DELAY_TANK_FULL);
-                LED_TANK_FULL = 0;
-
-                reset_starter_relay();
+                tank_full_delay_cnt = 1;
                 continue;
             }
             
