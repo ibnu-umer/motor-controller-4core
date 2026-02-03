@@ -249,6 +249,7 @@ void main(void)
                 toggle_motor(1); alarm(0);
             }
             
+            __delay_ms(10);
             continue;
         }
         
