@@ -173,16 +173,6 @@ unsigned char sensor_low_check(sensor_filter_t *s, unsigned char input)
 }
 
 
-void warn_sump_low(void) 
-{
-    for (unsigned int i = 0; i < 3; i++) {
-        BUZZER = 1; LED_SUMP_LOW = 1; __delay_ms(400);
-        BUZZER = 0; LED_SUMP_LOW = 0; __delay_ms(400);
-    }
-    LED_SUMP_LOW = 1;
-}
-
-
 // =============== TIMER ================== //
 
 void __interrupt() isr(void)
@@ -326,13 +316,6 @@ void main(void)
                     toggle_motor(1); alarm(0); 
                 }
             } 
-            
-            else {
-                
-                if (!RESET_SW) {
-                    warn_sump_low();
-                }
-            }
         }
 
         __delay_ms(5); // Small loop delay to reduce CPU load and stabilize loop timing
