@@ -29,6 +29,7 @@ unsigned int dry_run_latched      = 0;
 unsigned int sump_low             = 0;
 unsigned int sump_low_latched     = 0;
 unsigned int tank_full_delay_cnt  = 0;
+unsigned int tank_full            = 0;
 
 
 // ============ INITIALIZATION ============ // 
@@ -152,6 +153,7 @@ typedef struct {
     unsigned char stable_zero;
 } sensor_filter_t;
 
+sensor_filter_t tank_full_filt = {0};
 sensor_filter_t tank_low_filt = {0};
 sensor_filter_t sump_low_filt = {0};
 
@@ -194,7 +196,7 @@ void __interrupt() isr(void)
         relay_timer++;
         
         
-        if (LED_TANK_FULL) {tank_full_delay_cnt++; }
+        if (tank_full) {tank_full_delay_cnt++; }
         
         if (DRY_RUN) { dry_run_timer++; }
         
@@ -233,26 +235,31 @@ void main(void)
     
     while(1)    
     {
-        if (LED_TANK_FULL) {
+        // Read TANK FULL sensor and set LED TANK FULL after the tank full led delay
+        if (tank_full_delay_cnt >= DELAY_LED_TANK_FULL || !tank_full_delay_cnt) 
+        { LED_TANK_FULL = !sensor_low_check(&tank_full_filt, TANK_FULL); }
+        
+        if (tank_full) {
             
             // Handle Tank Full Delay
             if (tank_full_delay_cnt >= DELAY_TANK_FULL)
             {
-                LED_TANK_FULL = 0;
+                tank_full = 0;
+                tank_full_delay_cnt = 0;
                 reset_starter_relay();
             }
             
             // Handle RESET
             else if (!RESET_SW) {
-                LED_TANK_FULL = 0;
                 reset_starter_relay();
                 toggle_motor(1); alarm(0);
+                tank_full = 0;
+                tank_full_delay_cnt = 0;
             }
             
             __delay_ms(10);
             continue;
         }
-        
         
         LED_TANK_LOW = sensor_low_check(&tank_low_filt, TANK_LOW) ? 1 : 0;
         sump_low = sensor_low_check(&sump_low_filt, SUMP_LOW) ? 1 : 0;
@@ -270,6 +277,7 @@ void main(void)
                 dry_run_latched = 0;
 
                 LED_TANK_FULL = 1;
+                tank_full = 1;
                 alarm(0);
 
                 tank_full_delay_cnt = 1;
