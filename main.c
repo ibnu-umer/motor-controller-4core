@@ -246,6 +246,7 @@ void main(void)
             LED_TANK_FULL = is_triggered(&tank_full_filt, TANK_FULL) ? 1 : 0;
             LED_TANK_LOW = is_triggered(&tank_low_filt, TANK_LOW) ? 1 : 0;
             sump_low = !is_triggered(&sump_low_filt, SUMP_LOW);
+            if (sump_low) { sump_low_latched = 1; }
         }
         
         led_blink();
@@ -278,7 +279,6 @@ void main(void)
             
             // Handle Tank full 
             if (!TANK_FULL) {
-                LED_TANK_LOW = 0;
                 toggle_motor(0);
                 dry_run_latched = 0;
 
@@ -312,7 +312,7 @@ void main(void)
             if (!sump_low) {
                 
                 // Handle Reset switch trigger
-                if (!RESET_SW && !LED_TANK_FULL) { toggle_motor(1); alarm(0); continue; } 
+                if (!RESET_SW) { toggle_motor(1); alarm(0); continue; } 
                 
                 // TANK LOW and DRY RUN auto reset only works if not off by sump low
                 if (!sump_low_latched) {
