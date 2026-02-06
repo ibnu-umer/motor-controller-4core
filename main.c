@@ -150,26 +150,39 @@ void toggle_motor(unsigned char on)
 typedef struct {
     unsigned int count;
     unsigned int idx;
-    unsigned char stable_zero;
+    unsigned char triggered;
 } sensor_filter_t;
 
 sensor_filter_t tank_full_filt = {0};
 sensor_filter_t tank_low_filt = {0};
 sensor_filter_t sump_low_filt = {0};
 
-unsigned char sensor_low_check(sensor_filter_t *s, unsigned char input)
+// The function checks the sensor over 10 readings and reports it as triggered if even one reading is HIGH, 
+// otherwise it reports not triggered.
+unsigned char is_triggered(sensor_filter_t *s, unsigned char input)
 {
-    s->count += !input;
+    s->count += !input;   
     s->idx++;
 
     if (s->idx >= 10)
     {
         s->idx = 0;
-        s->stable_zero = (s->count == 0);
+        s->triggered = (s->count > 0);  // any HIGH = triggered
         s->count = 0;
     }
 
-    return s->stable_zero;
+    return s->triggered;
+}
+
+
+void init_level_sensors(void)
+{
+    for (unsigned int i = 0; i < 10; i++) {
+        is_triggered(&tank_full_filt, TANK_FULL);
+        is_triggered(&tank_low_filt, TANK_LOW);
+        is_triggered(&sump_low_filt, SUMP_LOW);
+        __delay_ms(5);
+    }
 }
 
 
@@ -223,12 +236,20 @@ void main(void)
     // Delay before starting
     __delay_ms(DELAY_START_UP); alarm(0);
     
+    init_level_sensors();
+    
     while(1)    
     {
-        // Read TANK FULL sensor and set LED TANK FULL after the tank full led delay
+        // Read TANK FULL, LOW, SUMP LOW sensors and set LEDs after the tank full led delay
         if (tank_full_delay_cnt >= DELAY_LED_TANK_FULL || !tank_full_delay_cnt) 
-        { LED_TANK_FULL = !sensor_low_check(&tank_full_filt, TANK_FULL); }
+        { 
+            LED_TANK_FULL = is_triggered(&tank_full_filt, TANK_FULL) ? 1 : 0;
+            LED_TANK_LOW = is_triggered(&tank_low_filt, TANK_LOW) ? 1 : 0;
+            sump_low = !is_triggered(&sump_low_filt, SUMP_LOW);
+        }
         
+        led_blink();
+
         if (tank_full) {
             
             // Handle Tank Full Delay
@@ -250,12 +271,7 @@ void main(void)
             __delay_ms(10);
             continue;
         }
-        
-        LED_TANK_LOW = sensor_low_check(&tank_low_filt, TANK_LOW) ? 1 : 0;
-        sump_low = sensor_low_check(&sump_low_filt, SUMP_LOW) ? 1 : 0;
-        
-        led_blink();
-        
+  
         if (motor_on)
         {
             run_starter_relay();
@@ -267,6 +283,7 @@ void main(void)
                 dry_run_latched = 0;
 
                 LED_TANK_FULL = 1;
+                LED_TANK_LOW = 1;
                 tank_full = 1;
                 alarm(0);
 
@@ -295,7 +312,7 @@ void main(void)
             if (!sump_low) {
                 
                 // Handle Reset switch trigger
-                if (!RESET_SW) { toggle_motor(1); alarm(0); continue; } 
+                if (!RESET_SW && !LED_TANK_FULL) { toggle_motor(1); alarm(0); continue; } 
                 
                 // TANK LOW and DRY RUN auto reset only works if not off by sump low
                 if (!sump_low_latched) {
@@ -309,7 +326,7 @@ void main(void)
                     }
 
                     // Handle Tank Low 
-                    else if (LED_TANK_LOW) { toggle_motor(1); alarm(0);  }
+                    else if (!LED_TANK_LOW) { toggle_motor(1); alarm(0);  }
                 }
                 
                 else if (!SUMP_HIGH) {
