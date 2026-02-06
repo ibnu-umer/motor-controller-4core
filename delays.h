@@ -12,7 +12,7 @@
 #define DELAY_DRY_RUN           1500    // 2m 30s (150s x 100 tick)
 #define DELAY_DRY_RUN_AFTER     200     // 20s
 #define DELAY_DRY_RUN_RESET     108000UL// 3h (600 (1m tick) x 180)
-#define DELAY_TANK_FULL         1500    // 2m 30s
+#define DELAY_TANK_FULL         1800    // 3m
 
 // TESTING LEVEL TIMER DELAYS
 //#define DELAY_START_UP          5000   // 5s
