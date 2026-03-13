@@ -30,7 +30,8 @@ unsigned int sump_low             = 0;
 unsigned int sump_low_latched     = 0;
 unsigned int tank_full_delay_cnt  = 0;
 unsigned int tank_full            = 0;
-
+unsigned int tank_low             = 0;
+unsigned char state               = 0;
 
 // ============ INITIALIZATION ============ // 
 
@@ -73,8 +74,12 @@ void alarm(unsigned int type)  // type - 0: normal, 1: warning
 void led_blink(void)
 { 
     if (blink_cnt >= DELAY_LED_BLINK) {
-        if (motor_on) { LED_PUMP_ON ^= 1; } else { LED_PUMP_ON = 0; }
-        if (sump_low) { LED_SUMP_LOW ^= 1; } else { LED_SUMP_LOW = 0; }
+
+        state ^= 1;
+
+        LED_PUMP_ON = (motor_on) ? (state ? 1 : 0) : 0;
+        LED_SUMP_LOW = (sump_low) ? (state ? 1 : 0) : 0;
+
         blink_cnt = 0;
     }
 }
@@ -228,8 +233,6 @@ void init_timer(void)
 
 void main(void)
 {
-    OSCCON = 0b01110000;
-    
     init_hw();
     init_timer();
     
@@ -244,7 +247,9 @@ void main(void)
         if (tank_full_delay_cnt >= DELAY_LED_TANK_FULL || !tank_full_delay_cnt) 
         { 
             LED_TANK_FULL = is_triggered(&tank_full_filt, TANK_FULL) ? 1 : 0;
-            LED_TANK_LOW = is_triggered(&tank_low_filt, TANK_LOW) ? 1 : 0;
+            tank_low = is_triggered(&tank_low_filt, TANK_LOW) ? 1 : 0;
+            if (tank_low) { LED_TANK_LOW = 1; } else { LED_TANK_LOW = (state ? 1 : 0); }
+            
             sump_low = !is_triggered(&sump_low_filt, SUMP_LOW);
             if (sump_low) { sump_low_latched = 1; }
         }
@@ -269,7 +274,7 @@ void main(void)
                 tank_full_delay_cnt = 0;
             }
             
-            __delay_ms(10);
+            __delay_ms(5);
             continue;
         }
   
@@ -326,7 +331,7 @@ void main(void)
                     }
 
                     // Handle Tank Low 
-                    else if (!LED_TANK_LOW) { toggle_motor(1); alarm(0);  }
+                    else if (!tank_low) { toggle_motor(1); alarm(0);  }
                 }
                 
                 else if (!SUMP_HIGH) {
