@@ -247,8 +247,16 @@ void main(void)
         if (tank_full_delay_cnt >= DELAY_LED_TANK_FULL || !tank_full_delay_cnt) 
         { 
             LED_TANK_FULL = is_triggered(&tank_full_filt, TANK_FULL) ? 1 : 0;
+            
             tank_low = is_triggered(&tank_low_filt, TANK_LOW) ? 1 : 0;
-            if (tank_low) { LED_TANK_LOW = 1; } else { LED_TANK_LOW = (state ? 1 : 0); }
+            
+            // comment one of the lines under to determine the LED_TANK_LOW state
+            
+            // Enable blink
+//             if (tank_low) { LED_TANK_LOW = 1; } else { LED_TANK_LOW = (state ? 1 : 0); }
+            
+            // Disable blink
+             LED_TANK_LOW = (tank_low ? 1 : 0);
             
             sump_low = !is_triggered(&sump_low_filt, SUMP_LOW);
             if (sump_low) { sump_low_latched = 1; }
